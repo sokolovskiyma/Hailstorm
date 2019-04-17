@@ -2,8 +2,10 @@
 CLI tool for load testing with yaml config files
 
 # Build
-- git clone https://github.com/sokolovskiyma/Hailstorm.git
-- go build *.go
+```
+git clone https://github.com/sokolovskiyma/Hailstorm.git
+go build *.go
+```
 
 # Usage
 
