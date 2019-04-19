@@ -10,7 +10,8 @@ go build *.go
 # Usage
 
 # Simple config
-```- name: 'Test-1'
+```
+- name: 'Test-1'
   url: 'http://127.0.0.1:8888'
   time: 10
   timeout: 10
@@ -77,4 +78,11 @@ go build *.go
   load:
       from: 10
       to: 50
-      #ramp: 10```
+      #ramp: 10
+```
+ 
+ # TODO
+- [ ] Binary release
+- [ ] README
+- [ ] Datasets
+
