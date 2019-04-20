@@ -1,5 +1,6 @@
 # Hailstorm
-CLI tool for load testing with yaml config files
+CLI tool for load testing with yaml config files.
+According to the script from the configuration file, creates the specified number of virtual users per minute. Users Reproduce the sequence of actions specified in the **"steps"** array. It is also possible to substitute variables in **"path"**, **"body"** and **"headers"** in place of special labels, such as **{{ variable }}**. Values of static variables from the set **"variables"**, values-increments from the set **"increments"** or values **captured** from the response to the previous step can be used for substitution.
 
 # Build
 ```
@@ -8,6 +9,14 @@ go build *.go
 ```
 
 # Usage
+To run with a configuration file in an arbitrary directory
+```
+./hailstorm /pth/to/config.yml
+```
+To run with config.yml in same directory
+```
+./hailstorm 
+```
 
 # Simple config
 ```
