@@ -14,13 +14,14 @@ import (
 
 var config Config
 var wg sync.WaitGroup
-var mu sync.Mutex
 var client *http.Client
+var mu sync.Mutex
 
 func main() {
 	err := readConfig()
 	if err != nil {
-		panic(err)
+		fmt.Printf("Config file unmarshal error - %s", err)
+		return
 	}
 	for index, phase := range config {
 		if phase.Timeout != 0 {
@@ -67,8 +68,7 @@ func reproducePhase(phase int) {
 		}()
 		go func() {
 			for range subTicker.C {
-				fmt.Printf("\rVirtual users per second - %v | Scenaries run: %d | Request send: %d | Time elapsed: %v", curRPS, result.ScenariesCount, result.RequestCount, time.Since(now).Round(time.Second))
-				// float32(result.ScenariesCount)/float32(time.Since(now)/time.Second),
+				// fmt.Printf("\rVirtual users per second - %v | Scenaries run: %d | Request send: %d | Time elapsed: %v", curRPS, result.ScenariesCount, result.RequestCount, time.Since(now).Round(time.Second))
 			}
 		}()
 		time.Sleep(timePerDegree)
@@ -81,44 +81,23 @@ func reproducePhase(phase int) {
 	wg.Wait()
 	result.Duration = time.Since(now).Round(time.Second)
 	result.AverageRPS = float32(result.ScenariesCount) / float32(time.Since(now)/time.Second)
-	printResult(result)
+	result.Print()
 }
 
-/*
- *	TODO: Возможно стоит не предавать в функцию кучу аргументов по отдельности,
- *		  а просто номер фазы. И использовать номер как то так config[phaseNumber].Incriments
- */
 func preproduceSteps(phase int, result *Result) {
+	//
+	localSteps := config[phase].Steps
+	localVariables := config[phase].Variables
 	defer wg.Done()
-	mu.Lock()
-	result.ScenariesCount++
-	mu.Unlock()
-	localIncrements := make(map[string]int)
-	mu.Lock()
-	// Копирует инкременты локаально, чтобы их никто не "инкрементнул" раньше чем их значения будут использованны
-	for key, value := range config[phase].Increments {
-		localIncrements[key] = value[0]
+	result.increaseScenaries()
+	for step, _ := range localSteps {
+		localSteps[step].replaceVar(phase, localVariables)
+		doReq(&localSteps[step], phase, &localVariables, result)
 	}
-	// Увеличивает глобальное значение инкрементов на задоанное значение, после разблокирывает мьютекс
-	for _, increment := range config[phase].Increments {
-		increment[0] += increment[1]
-	}
-	mu.Unlock()
-	for step, _ := range config[phase].Steps {
-		for key, _ := range config[phase].Steps[step].Headers {
-			config[phase].Steps[step].Headers[key] = replaceVar(config[phase].Steps[step].Headers[key], config[phase].Variables, localIncrements)
-		}
-		config[phase].Steps[step].Body = replaceVar(config[phase].Steps[step].Body, config[phase].Variables, localIncrements)
-		config[phase].Steps[step].Path = replaceVar(config[phase].Steps[step].Path, config[phase].Variables, localIncrements)
-		doReq(phase, step, result)
-	}
-	// mu.Lock()
-	// result.ScenariesCount++
-	// mu.Unlock()
 }
 
 // Делает запрос с текущими настройками
-func doReq(phase, step int, result *Result) {
+func doReq(step *Step, phase int, variables *map[string]string, result *Result) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -126,14 +105,14 @@ func doReq(phase, step int, result *Result) {
 			//panic(err)
 		}
 	}()
-	mu.Lock()
-	result.RequestCount++
-	mu.Unlock()
-	req, err := http.NewRequest(config[phase].Steps[step].Method, config[phase].URL+config[phase].Steps[step].Path, bytes.NewBuffer([]byte(config[phase].Steps[step].Body)))
+
+	result.increaseRequests()
+
+	req, err := http.NewRequest(step.Method, config[phase].URL+step.Path, bytes.NewBuffer([]byte(step.Body)))
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	for key, value := range config[phase].Steps[step].Headers {
+	for key, value := range step.Headers {
 		req.Header.Set(key, value)
 	}
 
@@ -142,18 +121,14 @@ func doReq(phase, step int, result *Result) {
 	// fmt.Println("---", req.URL)
 	resp, err := client.Do(req)
 	if err != nil {
-		mu.Lock()
-		result.Statuses["Errors"]++
-		mu.Unlock()
+		result.increaseStatuses("Errors")
+		fmt.Println(err.Error())
 		return
-		//fmt.Println(err.Error())
 	}
 	defer resp.Body.Close()
 
-	mu.Lock()
-	result.Latencys = append(result.Latencys, time.Since(now))
-	result.Statuses[strconv.Itoa(resp.StatusCode)]++
-	mu.Unlock()
+	result.appendLatency(time.Since(now))
+	result.increaseStatuses(strconv.Itoa(resp.StatusCode))
 
 	if resp.StatusCode == 404 {
 		fmt.Println()
@@ -167,7 +142,7 @@ func doReq(phase, step int, result *Result) {
 		}
 		// Если тело ответа не пустое
 		if stringBody := string(body); stringBody != "" {
-			err = catchValues(config[phase].Steps[step].Catch, stringBody, &config[phase].Variables)
+			err = catchValues(step.Catch, stringBody, variables)
 			if err != nil {
 				return
 			}
