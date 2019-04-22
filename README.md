@@ -20,12 +20,12 @@ To run with config.yml in same directory
 
 # Simple config
 ```
-- name: 'Test-1'
-  url: 'http://127.0.0.1:8888'
-  time: 10
-  timeout: 10
-  steps:
-      - method: 'POST'
+- name: 'Test-1'               #Name of the stage
+  url: 'http://127.0.0.1:8888' #Base url
+  time: 10                     #Time for stage
+  timeout: 10                  #Custom timeout for response in seconds (default 120s)
+  steps:                       #Array of virtual user steps
+      - method: 'POST'         
         path: '/test'
         body: '{"firstValue": {{ incTwo }}, "secondValue": {"thirdValue": ["test", 123, "{{ catchValue }}"], "thirdAndHalfValue": "thirdAndHalf"}, "lastValue": 666}'
         headers:
