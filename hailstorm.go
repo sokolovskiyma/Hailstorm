@@ -47,10 +47,6 @@ func reproducePhase(phase int) {
 	degrees := (config[phase].Load.To-config[phase].Load.From)/config[phase].Load.Ramp + 1
 	timePerDegree := time.Duration(float64(config[phase].Time) / float64(degrees) * float64(time.Second))
 	curRPS := config[phase].Load.From
-	// fmt.Printf("degrees - %v\n", degrees)
-	// fmt.Printf("curRPS  - %v\n", curRPS)
-	// fmt.Printf("timePerDegree - %v\n", timePerDegree)
-	// fmt.Println()
 
 	now := time.Now()
 	for i := 0; i < degrees; i++ {
