@@ -63,14 +63,16 @@ func reproducePhase(phase int) {
 			for range ticker.C {
 				wg.Add(1)
 				// Запускает виртуальных юзеров, каждого в своей горутине
-				go preproduceSteps(phase, &result)
+				go func(phase int, result *Result) {
+					preproduceSteps(phase, result)
+				}(phase, &result)
 			}
 		}()
-		go func() {
-			for range subTicker.C {
-				// fmt.Printf("\rVirtual users per second - %v | Scenaries run: %d | Request send: %d | Time elapsed: %v", curRPS, result.ScenariesCount, result.RequestCount, time.Since(now).Round(time.Second))
-			}
-		}()
+		// go func() {
+		// 	for range subTicker.C {
+		// 		fmt.Printf("\rVirtual users per second - %v | Scenaries run: %d | Request send: %d | Time elapsed: %v", curRPS, result.ScenariesCount, result.RequestCount, time.Since(now).Round(time.Second))
+		// 	}
+		// }()
 		time.Sleep(timePerDegree)
 
 		ticker.Stop()
