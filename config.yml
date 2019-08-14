@@ -26,8 +26,12 @@
           file: 'testlist2.scv'
           mode: 'random'
   increments:
-      incOne: [0, 1]
-      incTwo: [15, 5]
+      incOne:
+            start: 0
+            step: 1
+      incTwo:
+            start: 15
+            step: 5
   load:
       from: 10
       #to: 50
@@ -52,8 +56,12 @@
   variables:
       catchValue: 'test'
   increments:
-      incOne: [0, 1]
-      incTwo: [15, 5]
+      incOne:
+            start: 0
+            step: 1
+      incTwo:
+            start: 15
+            step: 5
   load:
       from: 10
       to: 50
